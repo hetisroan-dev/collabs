@@ -1,31 +1,31 @@
-// ==========================================
-// BEHEER HIER JE VIDEO'S EN UITLEG
-// ==========================================
-const collabVideos = [
+// Standaard lijst met beginvideo's (inclusief jouw Halloween uitleg!)
+const defaultVideos = [
     {
         title: "Halloween Special 2026 🎃",
-        youtubeId: "dQw4w9WgXcQ", // Vervang dit door de echte YouTube Video ID (de code achter watch?v=)
+        youtubeId: "dQw4w9WgXcQ", 
         theme: "Halloween",
-        description: "In deze video gaan Jense en ik griezelen in het donker. We proberen de engste spookhuizen te vinden en beleven de gekste avonturen. Lees hier alles over hoe we dit hebben opgenomen!"
+        description: "Dit is een epische challenge! Beantwoord je een vraag goed, dan mag je de ander schminken. Beantwoord je een vraag fout? Dan word je zelf geschminkt in griezelige Halloween-stijl!"
     },
     {
         title: "Sinterklaas Surprise Chaos 🎁",
-        youtubeId: "dQw4w9WgXcQ",
+        youtubeId: "dQw4w9WgXcQ", 
         theme: "Sinterklaas",
         description: "Pakjesavond liep volledig uit de hand! Jense had een surprise gemaakt waar je u tegen zegt. Bekijk de video om te zien wat er misging."
     },
     {
         title: "Kerst Special: De Grote Challenge 🎄",
-        youtubeId: "dQw4w9WgXcQ",
+        youtubeId: "dQw4w9WgXcQ", 
         theme: "Kerst",
         description: "Kerstviering zoals je het nog nooit hebt gezien. Samen met Jense hebben we de grootste kerstboom ooit geprobeerd te versieren in recordtijd."
     }
 ];
 
-// Wachtwoord instelling
+// Laad opgeslagen video's uit de browser of gebruik de standaardlijst
+let collabVideos = JSON.parse(localStorage.getItem('roan_jense_videos')) || defaultVideos;
+
 const CORRECT_PASSWORD = "RoanJense2026!?";
 
-// DOM Elementen koppelen
+// DOM Elementen
 const authForm = document.getElementById('auth-form');
 const passwordInput = document.getElementById('password-input');
 const errorMsg = document.getElementById('error-msg');
@@ -35,8 +35,12 @@ const videoGrid = document.getElementById('video-grid');
 const videoModal = document.getElementById('video-modal');
 const modalIframe = document.getElementById('modal-iframe');
 const closeModalBtn = document.getElementById('close-modal-btn');
+const addVideoForm = document.getElementById('add-video-form');
+const deleteVideoBtn = document.getElementById('delete-video-btn');
 
-// Wachtwoord formulier afhandeling
+let currentActiveIndex = null;
+
+// Wachtwoord afhandeling
 authForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (passwordInput.value === CORRECT_PASSWORD) {
@@ -50,7 +54,7 @@ authForm.addEventListener('submit', (e) => {
     }
 });
 
-// Video grid genereren
+// Video grid inladen op de pagina
 function loadVideos() {
     videoGrid.innerHTML = "";
 
@@ -74,36 +78,53 @@ function loadVideos() {
     });
 }
 
+// Nieuwe video toevoegen via het formulier op de website
+addVideoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const newVideo = {
+        title: document.getElementById('new-title').value,
+        youtubeId: document.getElementById('new-youtube-id').value.trim(),
+        theme: document.getElementById('new-theme').value,
+        description: document.getElementById('new-desc').value
+    };
+
+    collabVideos.unshift.call(collabVideos, newVideo); // Voeg bovenaan toe
+    localStorage.setItem('roan_jense_videos', JSON.stringify(collabVideos));
+    
+    addVideoForm.reset();
+    loadVideos();
+});
+
 // Modal openen
 function openModal(index) {
+    currentActiveIndex = index;
     const video = collabVideos[index];
     document.getElementById('modal-title').innerText = video.title;
     modalIframe.src = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`;
     document.getElementById('modal-desc').innerText = video.description;
-
+    
     videoModal.classList.remove('hidden');
     videoModal.classList.add('flex');
 }
 
-// Modal sluiten functies
+// Video verwijderen knop in de modal
+deleteVideoBtn.onclick = () => {
+    if (currentActiveIndex !== null && confirm("Weet je zeker dat je deze video wilt verwijderen?")) {
+        collabVideos.splice(currentActiveIndex, 1);
+        localStorage.setItem('roan_jense_videos', JSON.stringify(collabVideos));
+        closeModal();
+        loadVideos();
+    }
+};
+
+// Modal sluiten
 function closeModal() {
-    modalIframe.src = ""; // Stopt de YouTube video direct bij sluiten
+    modalIframe.src = "";
     videoModal.classList.remove('flex');
     videoModal.classList.add('hidden');
 }
 
 closeModalBtn.onclick = closeModal;
-
-// Sluit modal ook als je buiten het venster klikt
-videoModal.onclick = (e) => {
-    if (e.target === videoModal) {
-        closeModal();
-    }
-};
-
-// Sluit modal met de Escape-toets
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
-        closeModal();
-    }
-});
+videoModal.onclick = (e) => { if (e.target === videoModal) closeModal(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
